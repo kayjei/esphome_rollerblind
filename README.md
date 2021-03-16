@@ -1,6 +1,8 @@
 # esphome_rollerblind
 ESPhome config for roller blind
 
+Denna config skriver till NodeMcu flash-minne vid varje stopp, vilket förkortar NodeMcus livslängd. NodeMcu klarar ca 100.000 skrivningar
+
 Configen exponerar följande mot HomeAssistant:
 - Sensor Wifi signal
 - Sensor uptime
@@ -24,5 +26,3 @@ Configen exponerar följande mot HomeAssistant:
     service: esphome.${name}_update_global
     value: 10000
     ```
-    
-Denna config skriver till NodeMcu flash-minne vid varje stopp, vilket förkortar NodeMcus livslängd. NodeMcu klarar ca 100.000 skrivningar
