@@ -9,10 +9,20 @@ Configen exponerar följande mot HomeAssistant:
   - Close
   - Stopp
 - Service
-  - Control stepper
+  - Control stepper (Sätt ett mål för rullgardinen)
     ```
-    service: esphome.blind_bedroom_downstairs_control_stepper
+    service: esphome.${name}_control_stepper
     target: 10000
     ```
-  - Control stepper percent
-  - Update global
+  - Control stepper percent (Sätt ett mål i procent för rullgardinen, där 100 är öppen och 0 är stängd)
+    ```
+    service: esphome.${name}_control_stepper_percent
+    percent: 50
+    ```
+  - Update global (Uppdatera nuvarande position)
+    ```
+    service: esphome.${name}_update_global
+    value: 10000
+    ```
+    
+Denna config skriver till NodeMcu flash-minne vid varje stopp, vilket förkortar NodeMcus livslängd. NodeMcu klarar ca 100.000 skrivningar
