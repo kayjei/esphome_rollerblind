@@ -1,0 +1,167 @@
+substitutions:
+  node_name: blind_name
+
+esphome:
+  name: ${node_name}
+  platform: ESP8266
+  board: nodemcuv2
+  esp8266_restore_from_flash: true
+  on_boot:
+    then:
+      - stepper.report_position:
+          id: my_stepper
+          position: !lambda return id(global_target);
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda return id(global_target);
+
+wifi:
+  ssid: 'SSID'
+  password: 'password'
+  # Optional - use when mDNS is not supported
+  #use_address: 10.0.0.2
+
+# Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${node_name}_hotspot
+    password: 'hotspot_password'
+
+captive_portal:
+
+# Enable logging
+logger:
+  level: DEBUG
+  
+# Globals - values survive reboot
+globals:
+ - id: global_target
+   type: int
+   restore_value: true
+ - id: open_val
+   type: int
+   initial_value: '-18500'
+ - id: closed_val
+   type: int
+   initial_value: '0'
+
+# Enable Home Assistant API
+api:
+  password: 'API-password'
+  # Enable services in HA
+  services:
+    - service: control_stepper
+      variables:
+        target: int
+      then:
+        - stepper.set_target:
+            id: my_stepper
+            target: !lambda return target;
+        - lambda: id(global_target) = target;
+    - service: update_global
+      variables:
+        value: int
+      then:
+        - stepper.report_position:
+            id: my_stepper
+            position: !lambda return value;
+        - stepper.set_target:
+            id: my_stepper
+            target: !lambda return value;
+        - lambda: id(global_target) = value;
+    - service: control_stepper_percent
+      variables:
+        percent: int
+      then:
+        - stepper.set_target:
+            id: my_stepper
+            target: !lambda return percent * id(open_val) / 100;
+        - lambda: id(global_target) = percent * id(open_val) / 100;
+
+ota:
+  password: 'OTA-password'
+
+# Sensors
+sensor:
+  - platform: wifi_signal
+    name: Wifi ${node_name}
+    
+  - platform: uptime
+    id: uptime_s
+    
+text_sensor:
+  - platform: template
+    name: Uptime ${node_name}
+    lambda: |-
+      uint32_t dur = id(uptime_s).state;
+      int dys = 0;
+      int hrs = 0;
+      int mnts = 0;
+      if (dur > 86399) {
+        dys = trunc(dur / 86400);
+        dur = dur - (dys * 86400);
+      }
+      if (dur > 3599) {
+        hrs = trunc(dur / 3600);
+        dur = dur - (hrs * 3600);
+      }
+      if (dur > 59) {
+        mnts = trunc(dur / 60);
+        dur = dur - (mnts * 60);
+      }
+      char buffer[17];
+      sprintf(buffer, "%ud %02uh %02um %02us", dys, hrs, mnts, dur);
+      return {buffer};
+    icon: mdi:clock-start
+    update_interval: 60s
+
+# Optional - Position sensors, used to understand current position   
+#  - platform: template
+#    name: "Stepper state"
+#    lambda: return id(my_stepper).current_position;
+#    update_interval: 3s
+    
+#  - platform: template
+#    name: "Stepper global state"
+#    lambda: return id(global_target);
+#    update_interval: 3s
+
+#Cover
+cover:
+  - platform: template
+    device_class: blind
+    name: 'Blind Name'
+    id: window
+
+    open_action:
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda return id(open_val);
+      - lambda: id(global_target) = id(open_val);
+
+    close_action:
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda return id(closed_val);
+      - lambda: id(global_target) = id(closed_val);
+
+    stop_action:
+      - stepper.set_target:
+          id: my_stepper
+          target: !lambda return id(my_stepper).current_position;
+      - lambda: id(global_target) = id(my_stepper).current_position;
+
+    optimistic: true  
+    
+# Stepper
+stepper:
+  - platform: uln2003
+    id: my_stepper
+    pin_a: D0
+    pin_b: D1
+    pin_c: D2
+    pin_d: D3
+    max_speed: 500 steps/s
+    sleep_when_done: true
+    # Optional:
+    acceleration: inf
+    deceleration: inf
