@@ -10,7 +10,9 @@ Configen exponerar följande mot HomeAssistant:
   - Stopp
 - Service
   - Control stepper
-    ```service: esphome.blind_bedroom_downstairs_control_stepper
-       target: 10000```
+    ```
+    service: esphome.blind_bedroom_downstairs_control_stepper
+    target: 10000
+    ```
   - Control stepper percent
   - Update global
